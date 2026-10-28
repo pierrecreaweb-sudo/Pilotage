@@ -306,6 +306,20 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--sky)}
 }
 @media (prefers-reduced-motion:reduce){.lg{transition:none}.lg:hover,.lg:active{transform:none}}
 
+
+/* ---------- barre du haut mobile : Spotify + masquage au défilement ---------- */
+.sp-chip{display:none;align-items:center;gap:8px;padding:5px 12px 5px 5px;border-radius:999px;text-decoration:none;color:var(--fg);font-weight:800;font-size:13px;white-space:nowrap;max-width:46vw;background:rgba(30,215,96,.08)}
+.sp-play{width:28px;height:28px;border-radius:50%;background:var(--music);display:grid;place-items:center;flex:none;box-shadow:0 0 12px color-mix(in srgb,var(--music) 55%,transparent)}
+.sp-play svg{width:11px;height:11px;fill:#04140a;margin-left:2px}
+.sp-name{overflow:hidden;text-overflow:ellipsis}
+@media (max-width:759px){
+  .wx-chip{display:none}
+  .sp-chip:not([hidden]){display:inline-flex}
+  .bar-top{transition:transform .32s cubic-bezier(.2,.7,.2,1),opacity .25s ease;will-change:transform}
+  .bar-top.bar-hidden{transform:translateY(calc(-100% - 12px));opacity:0;pointer-events:none}
+}
+@media (prefers-reduced-motion:reduce){.bar-top{transition:none}}
+
 /* ---------- responsive ---------- */
 .app-title{display:none;font-family:var(--f-display);font-weight:700;font-size:17px;flex:1}
 .tabbar{display:none}
@@ -377,6 +391,7 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--sky)}
       <span class="app-title">Pilotage</span>
       <div class="tabs" id="tabs"></div>
       <a class="wx-chip lg" href="#accueil" id="wx-chip" aria-label="Météo"></a>
+      <a class="sp-chip lg" id="sp-chip" href="#reglages" target="_blank" rel="noopener" aria-label="Lancer la playlist sur Spotify" hidden><span class="sp-play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg></span><span class="sp-name" id="sp-name"></span></a>
     </nav>
   </div>
 </div>
@@ -647,6 +662,13 @@ function layout(){
   cols.forEach((c,i)=>c.hidden=i>=n);
   g.classList.remove('c1','c3');if(n!==2)g.classList.add('c'+n);
 }
+let lastY=0,ticking=false;
+addEventListener('scroll',()=>{if(ticking)return;ticking=true;requestAnimationFrame(()=>{
+  const y=Math.max(0,scrollY),dy=y-lastY,bar=document.querySelector('.bar-top');
+  if(innerWidth>=760||y<40)bar.classList.remove('bar-hidden');
+  else if(dy>6)bar.classList.add('bar-hidden');
+  else if(dy<-6)bar.classList.remove('bar-hidden');
+  lastY=y;ticking=false})},{passive:true});
 let rzT;addEventListener('resize',()=>{clearTimeout(rzT);rzT=setTimeout(layout,120)});
 addEventListener('hashchange',()=>{showTab();scrollTo({top:0})});
 
@@ -802,6 +824,7 @@ function render(){
   /* music */
   const pls=s.playlists;
   const play='<svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg>';
+  {const chip=$('#sp-chip');if(pls.length){chip.href=pls[0].url;$('#sp-name').textContent=pls[0].name;chip.hidden=false}else chip.hidden=true}
   $('[data-slot=music]').innerHTML=!pls.length?`<p class="empty">Choisis ta playlist dans <a href="#reglages">Réglages</a>.</p>`
     :pls.length===1?`<a class="pl-hero" href="${esc(pls[0].url)}" target="_blank" rel="noopener"><span class="play">${play}</span><span class="st"><small>Playlist · Spotify</small><b>${esc(pls[0].name)}</b></span><span class="go">Ouvrir ›</span></a>`
     :`<div class="pls">${pls.map(p=>`<a class="pl" href="${esc(p.url)}" target="_blank" rel="noopener"><span class="play">${play}</span><span>${esc(p.name)}</span></a>`).join('')}</div>`;

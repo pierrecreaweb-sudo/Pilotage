@@ -1,6 +1,6 @@
 // Service worker du centre de pilotage : l'app s'ouvre même hors connexion
 // (dernière version enregistrée), les données restent toujours lues en direct.
-const CACHE = 'pilotage-v3';
+const CACHE = 'pilotage-v4';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js'];
 

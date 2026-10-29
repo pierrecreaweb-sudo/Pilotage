@@ -439,6 +439,39 @@ html.light .sheet{background:rgba(15,27,61,.35)}
 html.light .panel::before{opacity:calc(var(--glowA) * .6)}
 html.light .logo{box-shadow:0 2px 10px rgba(15,27,61,.15)}
 
+
+/* ---------- cloche de notifications ---------- */
+.bell{position:relative;width:36px;height:36px;display:grid;place-items:center;border-radius:50%;color:var(--fg);border:0;cursor:pointer;flex:none;padding:0}
+.bell svg.ic{width:18px;height:18px}
+.bell .nb{position:absolute;top:-3px;right:-3px;z-index:2;min-width:18px;height:18px;border-radius:9px;background:var(--bad);color:#fff;font-size:10.5px;font-weight:800;display:grid;place-items:center;padding:0 5px;box-shadow:0 0 0 2px var(--bg);font-family:var(--f-body)}
+.bell.ring svg{animation:ring .9s ease 1}
+@keyframes ring{0%,100%{transform:rotate(0)}20%{transform:rotate(14deg)}40%{transform:rotate(-12deg)}60%{transform:rotate(8deg)}80%{transform:rotate(-4deg)}}
+.npanel{position:fixed;z-index:35;top:calc(70px + env(safe-area-inset-top,0px));right:max(16px,calc((100vw - 1480px)/2 + 16px));width:min(410px,calc(100vw - 32px));max-height:min(72vh,660px);overflow:auto;
+  background:var(--panel);border:1px solid var(--line);border-radius:20px;box-shadow:0 24px 60px rgba(0,0,0,.45);padding:14px}
+.npanel .ph{margin-bottom:8px}
+.npanel .nact{display:flex;gap:8px;align-items:center}
+.ni{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:12px;color:var(--fg);text-decoration:none;position:relative}
+.ni:hover{background:var(--panel2)}
+.ni > i{width:9px;height:9px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c);flex:none;margin-top:6px}
+.ni .nt{flex:1;min-width:0}
+.ni .nt b{display:block;font-size:13.5px}
+.ni .nt span{display:block;font-size:12.5px;color:var(--mute);overflow-wrap:anywhere}
+.ni .nt .btn{margin-top:6px;padding:4px 10px;font-size:12px}
+.ni.read{opacity:.55}
+.ni.read > i{box-shadow:none}
+.ngrp{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin:10px 10px 4px}
+.npush{display:flex;gap:10px;align-items:center;padding:10px 12px;margin-bottom:8px;border-radius:12px;background:color-mix(in srgb,var(--sky) 12%,var(--panel2));border:1px solid color-mix(in srgb,var(--sky) 35%,transparent);font-size:13px}
+.npush span{flex:1}
+.nempty{text-align:center;padding:26px 10px;color:var(--mute);font-size:13px}
+.nempty b{display:block;color:var(--fg);font-size:15px;margin-bottom:4px}
+@media (max-width:759px){
+  .app-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sp-chip{max-width:36vw}
+  .bell{width:34px;height:34px}
+  .npanel{top:auto;left:0;right:0;bottom:0;width:auto;max-height:82dvh;border-radius:22px 22px 0 0;z-index:41;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+  .nscrim{position:fixed;inset:0;z-index:40;background:rgba(2,6,15,.55)}
+}
+
 /* ---------- responsive ---------- */
 .app-title{display:none;font-family:var(--f-display);font-weight:700;font-size:17px;flex:1}
 .tabbar{display:none}
@@ -513,6 +546,7 @@ html.light .logo{box-shadow:0 2px 10px rgba(15,27,61,.15)}
       <span class="app-title">Pilotage</span>
       <div class="tabs" id="tabs"></div>
       <a class="wx-chip lg" href="#accueil" id="wx-chip" aria-label="Météo"></a>
+      <button class="bell lg" id="bell" type="button" data-act="bellToggle" aria-label="Notifications" aria-haspopup="dialog" aria-expanded="false"><span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span><span class="nb" id="bell-n" hidden></span></button>
       <a class="set-btn lg" href="#reglages" aria-label="Réglages"><span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg></span></a>
       <a class="sp-chip lg" id="sp-chip" href="#reglages" target="_blank" rel="noopener" aria-label="Lancer la playlist sur Spotify" hidden><span class="sp-play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg></span><span class="sp-name" id="sp-name"></span></a>
     </nav>
@@ -1129,8 +1163,8 @@ async function loadPcw(){
       sb.from('contacts').select('id,societe,prenom,nom,email,telephone,categorie'),
       sb.from('todos').select('titre,priorite,date_echeance,statut'),
       sb.from('rdv').select('id,objet,date_rdv,heure,statut,google_event_id,contact_id'),
-      sb.from('messages').select('id',{count:'exact',head:true}).eq('expediteur','client').eq('lu',false),
-      sb.from('demandes').select('id',{count:'exact',head:true}).neq('statut','Traité')
+      sb.from('messages').select('id,contact_id,contenu,date_creation',{count:'exact'}).eq('expediteur','client').eq('lu',false).order('id',{ascending:false}).limit(10),
+      sb.from('demandes').select('id,titre,priorite,contact_id,date_creation,sens',{count:'exact'}).neq('statut','Traité').order('id',{ascending:false}).limit(10)
     ]);
     const bad=rs.find(r=>r.error);if(bad)throw bad.error;
     const [f,dv,ev,ct,td,rv,ms,dm]=rs;
@@ -1147,8 +1181,10 @@ async function loadPcw(){
       devis_attente:{n:att.length,total:sum(att)},
       projets:(ev.data||[]).filter(e=>e.statut!=='Annulé').map(e=>({id:e.id,titre:e.titre,statut:e.statut,etape:e.etape_projet,client:cname(C[e.contact_id]),montant:DV[e.devis_id]?DV[e.devis_id].montant_ttc:null})),
       rdv:(rv.data||[]).filter(r=>{const d=String(r.date_rdv||'').slice(0,10);return d>=TODAY&&d<=in7&&!/^annul/i.test(r.statut||'')}).map(r=>({id:r.id,objet:r.objet,date:r.date_rdv,heure:r.heure,gid:r.google_event_id,client:cname(C[r.contact_id])})),
-      messages_non_lus:ms.count||0, demandes_ouvertes:dm.count||0,
-      todos:(td.data||[]).filter(t=>t.statut!=='Terminé').map(t=>({titre:t.titre,priorite:t.priorite,echeance:t.date_echeance})).sort((a,b)=>(a.echeance||'9').localeCompare(b.echeance||'9'))
+      messages_non_lus:ms.count??(ms.data||[]).length, demandes_ouvertes:dm.count??(dm.data||[]).length,
+      msgList:(ms.data||[]).map(m=>({id:m.id,client:cname(C[m.contact_id]),texte:m.contenu||'',date:m.date_creation||''})),
+      demList:(dm.data||[]).map(d=>({id:d.id,titre:d.titre||'',priorite:d.priorite||'',client:cname(C[d.contact_id]),date:d.date_creation||''})),
+      todos:(td.data||[]).filter(t=>t.statut!=='Terminé').map((t,i)=>({titre:t.titre,priorite:t.priorite,echeance:t.date_echeance})).sort((a,b)=>(a.echeance||'9').localeCompare(b.echeance||'9'))
     };
     pcwState='ok';pcwAt=Date.now();
   }catch(e){if(!pcwData){pcwState='error';pcwMsg="Lecture des données PCW impossible. Vérifie ta connexion."}}
@@ -1234,7 +1270,7 @@ async function loadWeather(){
 A.logout=async()=>{await sb.auth.signOut();location.reload()};
 A.refreshAll=()=>{loadWeather();loadPcw();loadAgenda();toast('Actualisation…')};
 
-const FREE=a=>['resetLook','pcwSync','gSync','logout','closeSheet','focusOpen','focusClose','fPreset','fStart','fPause','fStop'].includes(a);
+const FREE=a=>['resetLook','pcwSync','gSync','logout','closeSheet','focusOpen','focusClose','fPreset','fStart','fPause','fStop','bellToggle'].includes(a);
 document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.tagName==='FORM')return;const a=b.dataset.act;if(!ready&&!FREE(a)){toast("Patiente, les données se chargent.");return}A[a]?.(b.dataset.id,b)});
 document.addEventListener('submit',e=>{const f=e.target,a=f.dataset.act;if(!a)return;e.preventDefault();if(!ready&&!FREE(a)){toast("Patiente, les données se chargent.");return}A[a]?.(f)});
 document.addEventListener('change',e=>{const t=e.target;if(!ready)return;if(t.dataset.col)A.setColor(t);else if(t.dataset.chg)A[t.dataset.chg]?.(t)});
@@ -1363,7 +1399,7 @@ function renderProsp(){
   h+=`<div class="subh">Derniers appels</div>`+(rec.length?`<ul class="list">${rec.map(c=>`<li class="li"><span class="grow"><b>${esc(c.data.nom)}</b> <small>· ${fmtD(c.jour)}${c.data.heure?' '+esc(c.data.heure):''}</small>${c.data.notes?`<br><small>${esc(c.data.notes)}</small>`:''}</span><span class="pillr" style="--c:${resColor(c.data.resultat)}">${esc(c.data.resultat)}</span><button class="x" data-act="delLog" data-id="${c.id}" aria-label="Supprimer">×</button></li>`).join('')}</ul>`:`<p class="empty">Aucun appel noté. Touche « Noter un appel » après chaque appel pour suivre ta prospection.</p>`);
   $('[data-slot=prosp]').innerHTML=h;
 }
-A.relance=(num)=>{
+A.relance=(num)=>{if(bellOpen)A.bellToggle();
   const f=pcwData&&(pcwData.en_retard||[]).find(x=>x.numero===num);if(!f)return;
   const prev=L('relance').filter(l=>l.data.numero===num);
   const body=`Bonjour${f.prenom?' '+f.prenom:''},
@@ -1612,12 +1648,13 @@ function renderAlerts(){
 }
 
 /* ---------- Notifications push ---------- */
-const NDEF={on:true,morningOn:true,morning:'07:00',pnlOn:true,pnl:'20:30',tournoiOn:true,tournoi:'19:00',bilanOn:true,bilan:'19:00'};
+const NDEF={on:true,morningOn:true,morning:'07:00',pnlOn:true,pnl:'20:30',tournoiOn:true,tournoi:'19:00',bilanOn:true,bilan:'19:00',pcwOn:false};
 const NS=()=>Object.assign({},NDEF,S().notifs||{});
 const NROWS=[['morning','Résumé du matin'],['pnl','Rappel P&L (lun.–ven.)'],['tournoi','Veille de tournoi'],['bilan','Bilan du dimanche']];
 function renderNotifSet(){
   const n=NS();
-  $('#n-set').innerHTML=NROWS.map(([k,l])=>`<input type="checkbox" id="n-${k}" data-chg="nOn" data-key="${k}" ${n[k+'On']?'checked':''}><label for="n-${k}">${l}</label><input class="field num" type="time" aria-label="Heure ${l}" value="${esc(n[k])}" data-chg="nTime" data-key="${k}">`).join('');
+  $('#n-set').innerHTML=NROWS.map(([k,l])=>`<input type="checkbox" id="n-${k}" data-chg="nOn" data-key="${k}" ${n[k+'On']?'checked':''}><label for="n-${k}">${l}</label><input class="field num" type="time" aria-label="Heure ${l}" value="${esc(n[k])}" data-chg="nTime" data-key="${k}">`).join('')
+    +`<input type="checkbox" id="n-pcw" data-chg="nOn" data-key="pcw" ${n.pcwOn?'checked':''}><label for="n-pcw" style="grid-column:2/4">Nouveautés de l'app PCW<br><small class="muted" style="font-weight:500">Messages, demandes, devis acceptés, factures payées (vérifié toutes les 15 min). Laisse décoché si l'app PCW t'envoie déjà ses notifications sur ce téléphone.</small></label>`;
   const th=S().theme||'dark';$$('#s-theme button').forEach(b=>{b.classList.toggle('on',b.dataset.id===th);b.setAttribute('aria-pressed',b.dataset.id===th)});
 }
 const pushOk=()=>'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
@@ -1702,11 +1739,84 @@ Object.assign(A,{
 });
 if(F.end)setTimeout(()=>A.focusOpen(),400);
 
+
+/* ---------- centre de notifications (cloche) ---------- */
+let bellOpen=false, lastUnread=-1;
+const nowHM2=()=>hm(new Date());
+function buildNotifs(){
+  const out=[], s=S(), url=s.pcwUrl||'';
+  const add=(id,c,t,b,href,extra={})=>out.push({id,c,t,b,href,...extra});
+  if(pcwData){
+    (pcwData.msgList||[]).forEach(m=>add('msg-'+m.id,'var(--pcw)','Message de '+(m.client||'un client'),m.texte.length>110?m.texte.slice(0,109)+'…':m.texte,url||'#pcw',{ext:!!url,grp:'PCW'}));
+    (pcwData.demList||[]).forEach(d=>add('dem-'+d.id,/urg/i.test(d.priorite)?'var(--bad)':'var(--trading)','Demande'+(/urg/i.test(d.priorite)?' urgente':'')+' · '+(d.client||''),d.titre,url||'#pcw',{ext:!!url,grp:'PCW'}));
+    (pcwData.en_retard||[]).forEach(f=>add('fact-'+f.numero,'var(--bad)','Facture '+f.numero+' en retard',(f.client?f.client+' · ':'')+eur(f.montant)+(f.echeance?' · échue le '+frDate(f.echeance):''),'#pcw',{grp:'PCW',act:['Relancer','relance',f.numero]}));
+    (pcwData.todos||[]).filter(t=>t.echeance&&t.echeance<=TODAY).forEach(t=>add('todo-'+t.titre+'-'+t.echeance,t.echeance<TODAY?'var(--bad)':'var(--trading)',(t.echeance<TODAY?'Tâche PCW en retard':'Tâche PCW du jour'),t.titre+(t.echeance<TODAY?' · prévue le '+frDate(t.echeance):''),url||'#pcw',{ext:!!url,grp:'PCW'}));
+  }
+  L('call').filter(c=>c.data.rappel&&c.data.rappel<=TODAY&&!c.data.done).forEach(c=>add('call-'+c.id+'-'+TODAY,'var(--pcw)','Rappeler '+c.data.nom,(c.data.tel?c.data.tel+' · ':'')+(c.data.notes||c.data.resultat||''),'#pcw',{grp:'PCW',act:['Fait','callDone',c.id]}));
+  const nowK=nowHM2();
+  agendaItems().filter(x=>x.date===TODAY&&x.src!=='tournoi'&&(x.allDay||(x.time&&x.time>=nowK))).slice(0,4).forEach(x=>add('ag-'+x.id+'-'+TODAY,x.src==='rdv'?'var(--pcw)':'var(--agenda)',(x.allDay?"Aujourd'hui":'À '+x.time)+' · '+x.title,x.src==='rdv'?'RDV app PCW':'Google Agenda','#journee',{grp:'Journée'}));
+  L('tournoi').filter(t=>t.jour===TODAY||t.jour===plusDays(1)).forEach(t=>add('tour-'+t.id+'-'+TODAY,'var(--padel)','Tournoi '+(t.jour===TODAY?"aujourd'hui":'demain')+' · '+(t.data.nom||''),[t.data.categorie,t.data.heure,t.data.lieu,t.data.partenaire?'avec '+t.data.partenaire:''].filter(Boolean).join(' · '),'#padel',{grp:'Padel'}));
+  TRD().accounts.filter(a=>a.status!=='closed').forEach(a=>{const st=accStats(a);if(st.state!=='ok')add('acc-'+a.id+'-'+st.state+'-'+TODAY,st.state==='breach'?'var(--bad)':'var(--trading)',a.name+(st.state==='breach'?' : limite atteinte':' : proche de la limite'),Math.round(st.level*100)+' % du drawdown utilisé'+(st.state==='breach'?', stop pour aujourd\'hui.':'.'),'#trading',{grp:'Trading'})});
+  if(WD<=5&&nowK>=(NS().pnl||'20:30')&&dayPnl(TODAY)===null)add('pnl-'+TODAY,'var(--trading)','Journal de trading','Note ton P&L et tes trades du jour.','#trading',{grp:'Trading'});
+  const hs=M().habits||[], left=hs.length-((D(TODAY).habits||[]).filter(id=>hs.some(h=>h.id===id)).length);
+  if(hs.length&&left>0&&nowK>='20:00')add('hab-'+TODAY,'var(--padel)','Habitudes du jour','Il t\'en reste '+left+' sur '+hs.length+' à cocher.','#perso',{grp:'Perso'});
+  if(WD===7)add('bilan-'+mondayOf(TODAY),'var(--master)','Bilan de la semaine','Habitudes, CA, trading, padel : fais le point.','#perso',{grp:'Perso'});
+  return out;
+}
+function seenSet(){return new Set(M().notifSeen||[])}
+function unreadCount(){const seen=seenSet();return buildNotifs().filter(n=>!seen.has(n.id)).length}
+function renderBell(){
+  if(!ready)return;
+  const list=buildNotifs(), seen=seenSet(), unread=list.filter(n=>!seen.has(n.id));
+  const nb=$('#bell-n');nb.hidden=!unread.length;nb.textContent=unread.length>9?'9+':unread.length;
+  $('#bell').setAttribute('aria-label','Notifications'+(unread.length?' : '+unread.length+' non lue'+(unread.length>1?'s':''):''));
+  if(lastUnread>=0&&unread.length>lastUnread){const b=$('#bell');b.classList.remove('ring');void b.offsetWidth;b.classList.add('ring')}
+  lastUnread=unread.length;
+  try{unread.length?navigator.setAppBadge?.(unread.length):navigator.clearAppBadge?.()}catch(_){}
+  if(bellOpen)renderNPanel(list,seen);
+}
+function renderNPanel(list,seen){
+  let el=$('#npanel');if(!el)return;
+  const pushOff=pushOk()&&Notification.permission!=='granted';
+  const item=n=>`<a class="ni ${seen.has(n.id)?'read':''}" href="${esc(n.href)}" ${n.ext?'target="_blank" rel="noopener"':''} data-nid="${esc(n.id)}" style="--c:${n.c}"><i></i><span class="nt"><b>${esc(n.t)}</b><span>${esc(n.b)}</span>${n.act?`<button class="btn" type="button" data-act="${n.act[1]}" data-id="${esc(n.act[2])}">${esc(n.act[0])}</button>`:''}</span>${seen.has(n.id)?'':`<button class="x" type="button" data-act="nRead" data-id="${esc(n.id)}" aria-label="Marquer comme lue">×</button>`}</a>`;
+  const unread=list.filter(n=>!seen.has(n.id)), read=list.filter(n=>seen.has(n.id));
+  el.innerHTML=`<div class="ph"><h2>Notifications</h2><span class="nact">${unread.length?`<button class="btn" type="button" data-act="nReadAll" style="padding:4px 10px;font-size:12px">Tout marquer comme lu</button>`:''}<button class="x" type="button" data-act="bellToggle" aria-label="Fermer">×</button></span></div>
+    ${pushOff?`<div class="npush"><span>Reçois aussi ces alertes sur ton téléphone, même app fermée.</span><button class="btn primary" type="button" data-act="pushOn" style="padding:5px 11px;font-size:12px">Activer</button></div>`:''}
+    ${list.length?`${unread.length?unread.map(item).join(''):'<div class="nempty"><b>Tout est à jour</b>Aucune nouvelle notification.</div>'}${read.length?`<div class="ngrp">Déjà vues</div>${read.map(item).join('')}`:''}`
+      :'<div class="nempty"><b>Rien à signaler</b>Les factures, messages clients, rappels, tournois et alertes de trading apparaîtront ici.</div>'}
+    <div class="inl" style="justify-content:space-between;margin-top:10px"><a class="lnk" href="#reglages" style="font-size:12px">Réglages des notifications</a><small class="muted">Actualisé avec l'app PCW</small></div>`;
+}
+function markSeen(ids){
+  const cur=new Set(buildNotifs().map(n=>n.id)), seen=new Set((M().notifSeen||[]).filter(id=>cur.has(id)));
+  ids.forEach(id=>seen.add(id));
+  const m=clone(M());m.notifSeen=[...seen];saveMain(m);
+}
+Object.assign(A,{
+  bellToggle(){
+    bellOpen=!bellOpen;$('#bell').setAttribute('aria-expanded',bellOpen);
+    let el=$('#npanel'), sc=$('#nscrim');
+    if(bellOpen){
+      if(!el){el=document.createElement('div');el.className='npanel';el.id='npanel';el.setAttribute('role','dialog');el.setAttribute('aria-label','Notifications');document.body.appendChild(el)}
+      if(innerWidth<760&&!sc){sc=document.createElement('div');sc.className='nscrim';sc.id='nscrim';sc.addEventListener('click',()=>A.bellToggle());document.body.appendChild(sc)}
+      el.hidden=false;renderNPanel(buildNotifs(),seenSet());
+    }else{if(el)el.hidden=true;if(sc)sc.remove()}
+  },
+  nRead(id){markSeen([id])},
+  nReadAll(){markSeen(buildNotifs().map(n=>n.id));toast('Tout est marqué comme lu.')}
+});
+document.addEventListener('click',e=>{
+  const a=e.target.closest('.ni');
+  if(a&&e.target.closest('button')){e.preventDefault();return}
+  if(a){markSeen([a.dataset.nid]);if(bellOpen&&!a.target)A.bellToggle();return}
+  if(bellOpen&&e.target.isConnected&&!e.target.closest('#npanel')&&!e.target.closest('#bell')&&!e.target.closest('#nscrim')&&!e.target.closest('#sheet'))A.bellToggle();
+});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&bellOpen)A.bellToggle()});
+
 /* ---------- rendu des modules ---------- */
 function renderExtras(){
   const s=S();
   const qd=$('#q-devis');if(s.pcwUrl){qd.href=s.pcwUrl;qd.target='_blank'}else{qd.href='#reglages';qd.removeAttribute('target')}
-  renderAlerts();renderProsp();renderPadel();renderBilan();renderForme();renderNotes();renderNotifSet();
+  renderAlerts();renderProsp();renderPadel();renderBilan();renderForme();renderNotes();renderNotifSet();renderBell();
 }
 
 /* ---------- démarrage ---------- */
